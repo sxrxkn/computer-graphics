@@ -12,60 +12,64 @@ document.addEventListener('DOMContentLoaded', function () {
           this.Y0 = H / 2;
           this.pixelWidth = pixelWidth;
           this.pixelHeight = pixelHeight;
+          this.axisSize = [this.W, this.H]
           this.tickLength = 5
       }
 
-      worldToScreen(x, y) {
+    worldToScreen(x, y) {
         const screenX = this.X0 + this.px * x;
-        const screenY = this.Y0 - this.py * y; // Инвертируем для учета направления оси Y
+        const screenY = this.Y0 - this.py * y; 
         return [screenX, screenY];
     }
 
-      clearWorkspace() {
-          context.clearRect(0, 0, this.W, this.H);
-      }
+    screenToWorld(x, y) {
+        const worldX = (x - camera.X0 + 0.5) / camera.px
+        const worldY = -((y - camera.Y0 + 0.5) / camera.py)
+        return [worldX, worldY]
+    }
+
+    clearWorkspace() {
+        context.clearRect(0, 0, this.W, this.H);
+    }
 
       drawVertex(x, y) {
         const [screenX, screenY] = this.worldToScreen(x, y);
 
         context.beginPath();
         context.arc(screenX, screenY, 3, 0, 2 * Math.PI);
-        context.fillStyle = 'red'; // Цвет вершины (можете изменить)
+        context.fillStyle = 'red'; 
         context.fill();
     }
 
     drawLine(startX, startY, endX, endY) {
-      const [screenStartX, screenStartY] = this.worldToScreen(startX, startY);
-      const [screenEndX, screenEndY] = this.worldToScreen(endX, endY);
-  
-      context.beginPath();
-      context.moveTo(screenStartX, screenStartY);
-      context.lineTo(screenEndX, screenEndY);
-      context.stroke();
-  }
+        const [screenStartX, screenStartY] = this.worldToScreen(startX, startY);
+        const [screenEndX, screenEndY] = this.worldToScreen(endX, endY);
+
+        context.beginPath();
+        context.moveTo(screenStartX, screenStartY);
+        context.lineTo(screenEndX, screenEndY);
+        context.stroke();
+    }
 
       drawAxes() {
-          // Построение координатных осей
-          this.drawLine(-this.W / (2 * this.px), 0, this.W / (2 * this.px), 0); // Ось X
-          this.drawLine(0, this.H / (2 * this.py), 0, -this.H / (2 * this.py));  // Ось Y
+        this.drawLine(-this.axisSize[0] / (2 * this.px), 0, this.axisSize[0] / (2 * this.px), 0); 
+        this.drawLine(0, this.axisSize[1] / (2 * this.py), 0, -this.axisSize[1] / (2 * this.py));
 
-          // Разметка делений по обеим осям
-          this.drawAxisTicks();
+        // Разметка делений по обеим осям
+        this.drawAxisTicks();
       }
 
       drawAxisTicks() {
-          // Разметка делений по оси X
-          this.drawAxisTicksX();
+        this.drawAxisTicksX();
 
-          // Разметка делений по оси Y
-          this.drawAxisTicksY();
+        this.drawAxisTicksY();
       }
 
       drawAxisTicksX() {
         const tickLength = this.tickLength;
         const tickSpacing = this.pixelWidth; // Интервал между делениями в мировых координатах
     
-        for (let i = -this.W / (2 * this.px); i <= this.W / (2 * this.px); i += tickSpacing) {
+        for (let i = -this.axisSize[0] / (2 * this.px); i <= this.axisSize[0] / (2 * this.px); i += tickSpacing) {
             const x = i;
             const y = 0;
     
@@ -76,9 +80,9 @@ document.addEventListener('DOMContentLoaded', function () {
     
     drawAxisTicksY() {
         const tickLength = this.tickLength;
-        const tickSpacing = this.pixelHeight; // Интервал между делениями в мировых координатах
+        const tickSpacing = this.pixelHeight;
     
-        for (let i = -this.H / (2 * this.py); i <= this.H / (2 * this.py); i += tickSpacing) {
+        for (let i = -this.axisSize[1] / (2 * this.py); i <= this.axisSize[1] / (2 * this.py); i += tickSpacing) {
             const x = 0;
             const y = i;
     
@@ -111,9 +115,9 @@ document.addEventListener('DOMContentLoaded', function () {
         for (const matrix of this.transformationMatrices) {
             combinedMatrix = this.multiplyMatrices(combinedMatrix, matrix);
         }
+
         this.currentVertices = this.multiplyMatrices(combinedMatrix, this.currentVertices)
         this.transformationMatrices = []
-        console.log(this.currentVertices)
     }
 
       multiplyMatrices(matrixA, matrixB) {
@@ -141,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
       drawVertices() {
         const vertices = this.model.currentVertices;
 
-        for (let i = 0; i < vertices.length; i++) {
+        for (let i = 0; i < vertices[0].length; i++) {
             this.camera.drawVertex(vertices[0][i], vertices[1][i]);
         }
     }
@@ -165,20 +169,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const camera = new Camera2D(1, 1, canvas.width, canvas.height, 50, 50);
 
-  const vertices = [
-      [50, 100, 100],
-      [50, 50, 100 ],
-      [1, 1, 1]
+//   const vertices = [
+//       [50, 100, 100],
+//       [50, 50, 100 ],
+//       [1, 1, 1]
       
-  ];
+//   ];
 
-  const edges = [
-   [0, 1],
-   [1, 2],
-   [2, 0]
-  ];
+//   const edges = [
+//    [0, 1],
+//    [1, 2],
+//    [2, 0]
+//   ];
 
-  const model = new Model2D(vertices, edges);
+  const model = new Model2D([[],[],[]], []);
 
   const scene = new Scene2D(camera, model);
   scene.render()
@@ -202,9 +206,9 @@ document.getElementById('translateBtn').addEventListener('click', function () {
           [0, 1, translateY],
           [0, 0, 1]
       ];
-      console.log(translationMatrix)
+  
       model.transformationMatrices.push(translationMatrix);
-      applyAllTransformations();
+    //   applyAllTransformations();
   });
 
   // Обработчик для кнопки S (масштабирование)
@@ -217,7 +221,7 @@ document.getElementById('translateBtn').addEventListener('click', function () {
           [0, 0, 1]
       ];
       model.transformationMatrices.push(scalingMatrix);
-      applyAllTransformations();
+    //   applyAllTransformations();
   });
 
   // Обработчик для кнопки R (вращение)
@@ -230,7 +234,7 @@ document.getElementById('translateBtn').addEventListener('click', function () {
           [0, 0, 1]
       ];
       model.transformationMatrices.push(rotationMatrix);
-      applyAllTransformations();
+    //   applyAllTransformations();
   });
 
   // Обработчик для кнопки M (отражение)
@@ -268,7 +272,7 @@ document.getElementById('translateBtn').addEventListener('click', function () {
       if (reflectionMatrix) {
         model.transformationMatrices.push(reflectionMatrix);
       }
-      applyAllTransformations();
+    //   applyAllTransformations();
   });
 
   // Обработчик для кнопки Reset (сброс преобразований)
@@ -320,23 +324,66 @@ document.getElementById('translateBtn').addEventListener('click', function () {
   document.getElementById('scaleCamera').addEventListener('click', function() {
     const newWidth = parseInt(prompt('Enter new width:', canvas.width), 10) || canvas.width;
     const newHeight = parseInt(prompt('Enter new height:', canvas.height), 10) || canvas.height;
-
-    const newPx = newWidth / camera.W * camera.px
-    const newPy = newWidth / camera.W * camera.px
-    const newX0 = newWidth / camera.W * camera.X0
-    const newY0 = newWidth / camera.W * camera.px / camera.py * camera.Y0 + camera.H / 2 * (newHeight/camera.H - newWidth/camera.W * camera.px / camera.py)
-
-    console.log(newPx, newPy)
-
+    
+    const newPy = newHeight / camera.H * camera.py
+    const newPx = newPy
+    const newY0 = newHeight / camera.H * camera.Y0
+    const newX0 = ((-2 * camera.X0 + camera.W) * (newHeight / camera.H * camera.py) / (-2 * camera.px)) - (newWidth / -2)
+    
+    camera.axisSize = [camera.axisSize[0] * newPx, camera.axisSize[1] * newPy]
     camera.px = newPx
     camera.py = newPy
     camera.X0 = newX0
     camera.Y0 = newY0
+    
 
     canvas.width = newWidth;
     canvas.height = newHeight;
+    camera.H = newHeight
+    camera.W = newWidth
 
-    // Перерисовка содержимого сцены после изменения размеров canvas
     scene.render();
   })
+
+
+  let isDrawing = false;
+
+  document.getElementById('addFigureBtn').addEventListener('click', function () {
+    isDrawing = !isDrawing;
+    console.log(isDrawing);
+
+    if (isDrawing) {
+        // Включение режима рисования
+        canvas.addEventListener('mousedown', handleDrawing);
+    } else {
+        canvas.removeEventListener('mousedown', handleDrawing);
+    }
+
+    let currentVertices = [];
+
+    function handleDrawing(event) {
+        if (isDrawing) {
+            currentVertices = [];
+
+            const x = event.clientX - canvas.getBoundingClientRect().left;
+            const y = event.clientY - canvas.getBoundingClientRect().top;
+            const worldCoordinates = camera.screenToWorld(x, y);
+
+            model.currentVertices[0].push(worldCoordinates[0]);
+            model.currentVertices[1].push(worldCoordinates[1]);
+            model.currentVertices[2].push(1);
+
+            const lastVertexIndex = model.currentVertices[0].length - 1;
+            if (lastVertexIndex >= 0) {
+                const newEdge = [lastVertexIndex - 1, lastVertexIndex];
+                model.edges.push(newEdge);
+            }
+
+            console.log(model.currentVertices.length);
+            scene.render();
+        }
+    }
 });
+
+});
+
