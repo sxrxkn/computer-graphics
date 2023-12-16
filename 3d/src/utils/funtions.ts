@@ -1,3 +1,5 @@
+import { CordinateSystem } from "../store/reducers/CameraSlice";
+
 export const multiplyMatrices = (matrixA: number[][], matrixB: number[][]) => {
   const result: number[][] = [];
   for (let i = 0; i < matrixA.length; i++) {
@@ -13,7 +15,7 @@ export const multiplyMatrices = (matrixA: number[][], matrixB: number[][]) => {
   return result;
 };
 
-export const worldToScreen = (
+export const projectionToScreen = (
   x: number,
   y: number,
   X0: number,
@@ -26,7 +28,7 @@ export const worldToScreen = (
   return [screenX, screenY];
 };
 
-export const screenToWorld = (
+export const screenToProjection = (
   x: number,
   y: number,
   X0: number,
@@ -37,4 +39,36 @@ export const screenToWorld = (
   const worldX = (x - X0 + 0.5) / px;
   const worldY = -((y - Y0 + 0.5) / py);
   return [worldX, worldY];
+};
+
+export const worldToView = (
+  iv: CordinateSystem,
+  jv: CordinateSystem,
+  kv: CordinateSystem,
+  Ov: CordinateSystem,
+  uw: CordinateSystem
+) => {
+  const firstMatrix = [
+    [iv.x, iv.y, iv.z, -(iv.x * Ov.x + iv.y * Ov.y + iv.z * Ov.z)],
+    [jv.x, jv.y, jv.z, -(jv.x * Ov.x + jv.y * Ov.y + jv.z * Ov.z)],
+    [kv.x, kv.y, kv.z, -(kv.x * Ov.x + kv.y * Ov.y + kv.z * Ov.z)],
+    [0, 0, 0, 1],
+  ];
+  const secondMatrix = [[uw.x], [uw.y], [uw.z], [1]];
+
+  const result = multiplyMatrices(firstMatrix, secondMatrix);
+  return result;
+};
+
+export const viewToProjection = (F: number, uv: CordinateSystem) => {
+  const firstMatrix = [
+    [1, 0, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, -(1 / F), 1],
+  ];
+
+  const secondMatrix = [[uv.x], [uv.y], [uv.z], [1]];
+
+  const result = multiplyMatrices(firstMatrix, secondMatrix);
+  return result;
 };
