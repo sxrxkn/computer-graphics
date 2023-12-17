@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useAppSelector, useAppDispatch } from "../hooks/redux";
 import {
+  multiplyMatrices,
   projectionToScreen,
   viewToProjection,
   worldToView,
@@ -32,9 +33,11 @@ const Scene3D = () => {
     // Шаг 2: Вычисление вектора iv
     const crossProduct = {
       x: camera.T.y * camera.N.z - camera.T.z * camera.N.y,
-      y: camera.T.z * camera.N.x - camera.T.x * camera.N.z,
+      y: camera.T.x * camera.N.z - camera.T.z * camera.N.x,
       z: camera.T.x * camera.N.y - camera.T.y * camera.N.x,
     };
+    //console.log(crossProduct.x)
+  //  console.log(multiplyMatrices([[camera.T.x],[camera.T.y],[camera.T.z]], [[camera.N.x],[camera.N.y],[camera.N.z]]), "И", crossProduct)
     const ivMagnitude = Math.sqrt(
       crossProduct.x ** 2 + crossProduct.y ** 2 + crossProduct.z ** 2
     );
@@ -109,7 +112,7 @@ const Scene3D = () => {
 
       const drawAxes = () => {
         drawLine(
-          -camera.axisSize[0] / (2 * camera.px),
+          0,
           0,
           camera.axisSize[0] / (2 * camera.px),
           0
@@ -118,7 +121,7 @@ const Scene3D = () => {
           0,
           camera.axisSize[1] / (2 * camera.py),
           0,
-          -camera.axisSize[1] / (2 * camera.py)
+          0
         );
         drawLine(
           0,
@@ -140,7 +143,7 @@ const Scene3D = () => {
         const tickSpacing = camera.pixelWidth; // Интервал между делениями в мировых координатах
 
         for (
-          let i = -camera.axisSize[0] / (2 * camera.px);
+          let i = 0;
           i <= camera.axisSize[0] / (2 * camera.px);
           i += tickSpacing
         ) {
@@ -157,7 +160,7 @@ const Scene3D = () => {
         const tickSpacing = camera.pixelHeight;
 
         for (
-          let i = -camera.axisSize[1] / (2 * camera.py);
+          let i = 0;
           i <= camera.axisSize[1] / (2 * camera.py);
           i += tickSpacing
         ) {
@@ -238,8 +241,8 @@ const Scene3D = () => {
           resultProjectionCoordinates[1].push(projectionCoordinate[1][0]);
           resultProjectionCoordinates[2].push(projectionCoordinate[2][0]);
         }
-        // console.log(resultProjectionCoordinates);
         drawVertices(resultProjectionCoordinates);
+
 
         const edges = model.edges;
 

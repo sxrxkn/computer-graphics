@@ -55,7 +55,6 @@ export const worldToView = (
     [0, 0, 0, 1],
   ];
   const secondMatrix = [[uw.x], [uw.y], [uw.z], [1]];
-
   const result = multiplyMatrices(firstMatrix, secondMatrix);
   return result;
 };
