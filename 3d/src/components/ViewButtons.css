@@ -1,0 +1,28 @@
+.buttons-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.buttons_column-direction {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.viewButton {
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    height: 40px;
+    width: 40px;
+}
+
+.viewButton_blue-color {
+    background-color: rgb(183, 208, 241);
+}
+
+.viewButton_green-color {
+    background-color: rgb(165, 243, 186);
+}   

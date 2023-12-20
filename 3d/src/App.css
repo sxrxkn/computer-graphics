@@ -36,3 +36,14 @@
     transform: rotate(360deg);
   }
 }
+
+.movingButtons {
+  position: fixed;
+  right: 30px; 
+  bottom: 30px;
+}
+
+
+.movingButtons h2 {
+  text-align: center;
+}

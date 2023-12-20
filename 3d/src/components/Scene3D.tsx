@@ -1,12 +1,16 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAppSelector, useAppDispatch } from "../hooks/redux";
 import {
-  multiplyMatrices,
   projectionToScreen,
   viewToProjection,
+  worldToProjection,
   worldToView,
 } from "../utils/funtions";
-import { cameraSlice } from "../store/reducers/CameraSlice";
+import {
+  cameraSlice,
+  updateDragging,
+  zoomCamera,
+} from "../store/reducers/CameraSlice";
 
 const Scene3D = () => {
   const dispatch = useAppDispatch();
@@ -36,8 +40,7 @@ const Scene3D = () => {
       y: camera.T.x * camera.N.z - camera.T.z * camera.N.x,
       z: camera.T.x * camera.N.y - camera.T.y * camera.N.x,
     };
-    //console.log(crossProduct.x)
-  //  console.log(multiplyMatrices([[camera.T.x],[camera.T.y],[camera.T.z]], [[camera.N.x],[camera.N.y],[camera.N.z]]), "И", crossProduct)
+
     const ivMagnitude = Math.sqrt(
       crossProduct.x ** 2 + crossProduct.y ** 2 + crossProduct.z ** 2
     );
@@ -55,7 +58,7 @@ const Scene3D = () => {
     };
     dispatch(setBasisVectors([iv, jv, kv]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [camera.N, camera.T]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -85,7 +88,8 @@ const Scene3D = () => {
         startX: number,
         startY: number,
         endX: number,
-        endY: number
+        endY: number,
+        color: string = "black"
       ) => {
         const [screenStartX, screenStartY] = projectionToScreen(
           startX,
@@ -107,51 +111,114 @@ const Scene3D = () => {
         context.beginPath();
         context.moveTo(screenStartX, screenStartY);
         context.lineTo(screenEndX, screenEndY);
+        context.strokeStyle = color;
         context.stroke();
       };
 
       const drawAxes = () => {
-        drawLine(
-          0,
-          0,
-          camera.axisSize[0] / (2 * camera.px),
-          0
+        const center = worldToProjection(
+          { x: 0, y: 0, z: 0 },
+          camera.iv,
+          camera.jv,
+          camera.kv,
+          camera.Ov,
+          camera.F
         );
-        drawLine(
-          0,
-          camera.axisSize[1] / (2 * camera.py),
-          0,
-          0
+        const xEnd = worldToProjection(
+          {
+            x: camera.axisSize[0],
+            y: 0,
+            z: 0,
+          },
+          camera.iv,
+          camera.jv,
+          camera.kv,
+          camera.Ov,
+          camera.F
         );
-        drawLine(
-          0,
-          0,
-          -camera.axisSize[0] / (2 * camera.px),
-          -camera.axisSize[1] / (2 * camera.py)
+
+        const yStart = worldToProjection(
+          {
+            x: 0,
+            y: camera.axisSize[1],
+            z: 0,
+          },
+          camera.iv,
+          camera.jv,
+          camera.kv,
+          camera.Ov,
+          camera.F
         );
+        const zEnd = worldToProjection(
+          {
+            x: 0,
+            y: 0,
+            z: camera.axisSize[0],
+          },
+          camera.iv,
+          camera.jv,
+          camera.kv,
+          camera.Ov,
+          camera.F
+        );
+
+        drawLine(center[0][0], center[1][0], xEnd[0][0], xEnd[1][0], "red");
+        drawLine(
+          yStart[0][0],
+          yStart[1][0],
+          center[0][0],
+          center[1][0],
+          "green"
+        );
+        drawLine(center[0][0], center[1][0], zEnd[0][0], zEnd[1][0], "blue");
         drawAxisTicks();
       };
 
       const drawAxisTicks = () => {
         drawAxisTicksX();
         drawAxisTicksY();
-        // drawAxisTicksZ();
+        drawAxisTicksZ();
       };
 
       const drawAxisTicksX = () => {
         const tickLength = 5;
         const tickSpacing = camera.pixelWidth; // Интервал между делениями в мировых координатах
 
-        for (
-          let i = 0;
-          i <= camera.axisSize[0] / (2 * camera.px);
-          i += tickSpacing
-        ) {
+        for (let i = 0; i <= camera.axisSize[0]; i += tickSpacing) {
           const x = i;
           const y = 0;
 
-          drawLine(x, y - tickLength / 2, x, y + tickLength / 2);
-          drawTickLabel(x, y + tickLength, x);
+          const startProjection = worldToProjection(
+            {
+              x: x,
+              y: y - tickLength / 2,
+              z: 0,
+            },
+            camera.iv,
+            camera.jv,
+            camera.kv,
+            camera.Ov,
+            camera.F
+          );
+          const endProjection = worldToProjection(
+            {
+              x: x,
+              y: y + tickLength / 2,
+              z: 0,
+            },
+            camera.iv,
+            camera.jv,
+            camera.kv,
+            camera.Ov,
+            camera.F
+          );
+          drawLine(
+            startProjection[0][0],
+            startProjection[1][0],
+            endProjection[0][0],
+            endProjection[1][0]
+          );
+          drawTickLabel(endProjection[0][0], endProjection[1][0], x);
         }
       };
 
@@ -159,34 +226,88 @@ const Scene3D = () => {
         const tickLength = 5;
         const tickSpacing = camera.pixelHeight;
 
-        for (
-          let i = 0;
-          i <= camera.axisSize[1] / (2 * camera.py);
-          i += tickSpacing
-        ) {
+        for (let i = 0; i <= camera.axisSize[1]; i += tickSpacing) {
           const x = 0;
           const y = i;
 
-          drawLine(x - tickLength / 2, y, x + tickLength / 2, y);
-          drawTickLabel(x - tickLength, y, y);
+          const startProjection = worldToProjection(
+            {
+              x: x - tickLength / 2,
+              y: y,
+              z: 0,
+            },
+            camera.iv,
+            camera.jv,
+            camera.kv,
+            camera.Ov,
+            camera.F
+          );
+          const endProjection = worldToProjection(
+            {
+              x: x + tickLength / 2,
+              y: y,
+              z: 0,
+            },
+            camera.iv,
+            camera.jv,
+            camera.kv,
+            camera.Ov,
+            camera.F
+          );
+
+          drawLine(
+            startProjection[0][0],
+            startProjection[1][0],
+            endProjection[0][0],
+            endProjection[1][0]
+          );
+          drawTickLabel(startProjection[0][0], startProjection[1][0], y);
         }
       };
 
-      // const drawAxisTicksZ = () => {
-      //   const tickLength = 20;
-      //   const tickSpacing = 50;
+      const drawAxisTicksZ = () => {
+        const tickLength = 5;
+        const tickSpacing = 50;
 
-      //   for (
-      //     let i = 0;
-      //     i <= camera.axisSize[2] / (2 * camera.pz);
-      //     i += tickSpacing
-      //   ) {
-      //     const z = i;
+        for (let i = 0; i <= camera.axisSize[0]; i += tickSpacing) {
+          const x = 0;
+          const y = 0;
+          const z = i;
 
-      //     drawLine(z - tickLength / 2, z, 0, z + tickLength / 2);
-      //     drawTickLabel(0, 0, z + tickLength);
-      //   }
-      // };
+          const startProjection = worldToProjection(
+            {
+              x: x,
+              y: y,
+              z: z - tickLength / 2,
+            },
+            camera.iv,
+            camera.jv,
+            camera.kv,
+            camera.Ov,
+            camera.F
+          );
+          const endProjection = worldToProjection(
+            {
+              x: x,
+              y: y,
+              z: z + tickLength / 2,
+            },
+            camera.iv,
+            camera.jv,
+            camera.kv,
+            camera.Ov,
+            camera.F
+          );
+
+          drawLine(
+            startProjection[0][0],
+            startProjection[1][0],
+            endProjection[0][0],
+            endProjection[1][0]
+          );
+          drawTickLabel(startProjection[0][0], startProjection[1][0], z);
+        }
+      };
 
       const drawTickLabel = (x: number, y: number, label: number) => {
         context.font = "10px Arial";
@@ -243,7 +364,6 @@ const Scene3D = () => {
         }
         drawVertices(resultProjectionCoordinates);
 
-
         const edges = model.edges;
 
         for (let i = 0; i < edges.length; i++) {
@@ -264,8 +384,67 @@ const Scene3D = () => {
     }
   }, [camera, model]);
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragStartY, setDragStartY] = useState(0);
+
+  const handleMouseDown = (
+    event: React.MouseEvent<HTMLCanvasElement, MouseEvent>
+  ) => {
+    if (event.button === 0) {
+      setIsDragging(true);
+      setDragStartX(event.clientX);
+      setDragStartY(event.clientY);
+    }
+  };
+
+  const handleMouseMove = (
+    event: React.MouseEvent<HTMLCanvasElement, MouseEvent>
+  ) => {
+    if (isDragging) {
+      const deltaX = event.clientX - dragStartX;
+      const deltaY = event.clientY - dragStartY;
+
+      dispatch(updateDragging({ deltaX, deltaY }));
+
+      setDragStartX(event.clientX);
+      setDragStartY(event.clientY);
+    }
+  };
+
+  const handleMouseUp = (
+    event: React.MouseEvent<HTMLCanvasElement, MouseEvent>
+  ) => {
+    if (event.button === 0 && isDragging) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    const delta = e.deltaY;
+    const scaleFactor = 1.1;
+
+    // Определение направления прокрутки
+    const zoomFactor = delta < 0 ? scaleFactor : 1 / scaleFactor;
+
+    dispatch(zoomCamera({ xs: e.clientX, ys: e.clientY, k: zoomFactor }));
+    // e.preventDefault ? e.preventDefault() : (e.returnValue = false);
+  };
+
   return (
     <canvas
+      onMouseDown={(e) => {
+        handleMouseDown(e);
+      }}
+      onMouseMove={(e) => {
+        handleMouseMove(e);
+      }}
+      onMouseUp={(e) => {
+        handleMouseUp(e);
+      }}
+      onWheel={(e) => {
+        handleWheel(e);
+      }}
       style={{ border: "2px solid black", margin: "10px" }}
       ref={canvasRef}
       width={camera.W}

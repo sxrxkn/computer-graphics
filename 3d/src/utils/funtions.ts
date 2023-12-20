@@ -71,3 +71,21 @@ export const viewToProjection = (F: number, uv: CordinateSystem) => {
   const result = multiplyMatrices(firstMatrix, secondMatrix);
   return result;
 };
+
+export const worldToProjection = (
+  uw: CordinateSystem,
+  iv: CordinateSystem,
+  jv: CordinateSystem,
+  kv: CordinateSystem,
+  Ov: CordinateSystem,
+  F: number
+) => {
+  const coordinatesView = worldToView(iv, jv, kv, Ov, uw);
+  const uvCenter = {
+    x: coordinatesView[0][0],
+    y: coordinatesView[1][0],
+    z: coordinatesView[2][0],
+  };
+  const coordinatesProjection = viewToProjection(F, uvCenter);
+  return coordinatesProjection;
+};

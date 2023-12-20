@@ -1,11 +1,9 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import cameraSlice from "./reducers/CameraSlice";
-import generalSlice from "./reducers/GeneralSlice";
 import modelSlice from "./reducers/ModelSlice";
 
 const rootReducer = combineReducers({
   cameraSlice,
-  generalSlice,
   modelSlice,
 });
 

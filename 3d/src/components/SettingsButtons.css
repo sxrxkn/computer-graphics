@@ -1,0 +1,19 @@
+.settings-block {
+    position: fixed;
+    right: 30px; 
+    top: 30px;
+}
+.settings-block__buttons-block {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+.settings-block__button {
+    background-color: rgb(164, 238, 238);
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+}
+.settings-block h2 {
+    text-align: center;
+}

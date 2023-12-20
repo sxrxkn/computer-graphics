@@ -232,7 +232,6 @@ document.getElementById('translateBtn').addEventListener('click', function () {
   document.getElementById('rotateBtn').addEventListener('click', function () {
       const angle = parseFloat(prompt('Enter rotation angle in degrees:', '0')) || 0;
       const radianAngle = (angle * Math.PI) / 180;
-      console.log(radianAngle)
       const rotationMatrix = [
           [Math.cos(radianAngle), -Math.sin(radianAngle), 0],
           [Math.sin(radianAngle), Math.cos(radianAngle), 0],
@@ -410,8 +409,7 @@ document.getElementById('translateBtn').addEventListener('click', function () {
     //     [y1, y2] = [y2, y1];
     // }
     
-    
-    console.log([x1,y1], [x2,y2]);
+
     model.originalVertices[0].push(x1,x2);
     model.originalVertices[1].push(y1,y2)
     model.originalVertices[2].push(1,1)
